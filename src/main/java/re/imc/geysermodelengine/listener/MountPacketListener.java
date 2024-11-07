@@ -10,7 +10,6 @@ import com.comphenix.protocol.wrappers.Pair;
 import com.ticxo.modelengine.api.ModelEngineAPI;
 import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.bone.type.Mount;
-import com.ticxo.modelengine.api.mount.controller.MountController;
 import org.geysermc.floodgate.api.FloodgateApi;
 import re.imc.geysermodelengine.GeyserModelEngine;
 

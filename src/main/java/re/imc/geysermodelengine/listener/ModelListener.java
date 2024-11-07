@@ -1,39 +1,22 @@
 package re.imc.geysermodelengine.listener;
 
-import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.Pair;
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
-import com.ticxo.modelengine.api.ModelEngineAPI;
-import com.ticxo.modelengine.api.events.*;
-import com.ticxo.modelengine.api.generator.blueprint.ModelBlueprint;
+import com.ticxo.modelengine.api.events.AddModelEvent;
+import com.ticxo.modelengine.api.events.ModelDismountEvent;
+import com.ticxo.modelengine.api.events.ModelMountEvent;
+import com.ticxo.modelengine.api.events.RemoveModelEvent;
 import com.ticxo.modelengine.api.model.ActiveModel;
-import com.ticxo.modelengine.api.model.ModeledEntity;
-import com.ticxo.modelengine.api.model.render.ModelRenderer;
-import me.zimzaza4.geyserutils.spigot.api.EntityUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.world.EntitiesLoadEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.geysermc.floodgate.api.FloodgateApi;
 import re.imc.geysermodelengine.GeyserModelEngine;
-import re.imc.geysermodelengine.model.EntityTask;
 import re.imc.geysermodelengine.model.ModelEntity;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ModelListener implements Listener {
 
@@ -49,7 +32,6 @@ public class ModelListener implements Listener {
         ModelEntity.create(event.getTarget(), event.getModel());
     }
 
-
     @EventHandler
     public void onRemoveModel(RemoveModelEvent event) {
     }
@@ -60,11 +42,12 @@ public class ModelListener implements Listener {
         if (map == null) {
             return;
         }
+
         if (!event.isDriver()) {
             return;
         }
-        ModelEntity model = map.get(event.getVehicle());
 
+        ModelEntity model = map.get(event.getVehicle());
         if (model != null && event.getPassenger() instanceof Player player) {
             GeyserModelEngine.getInstance().getDrivers().put(player, new Pair<>(event.getVehicle(), event.getSeat()));
         }
@@ -77,6 +60,22 @@ public class ModelListener implements Listener {
         }
     }
 
+//    @EventHandler
+//    public void onAnimationPlay(AnimationPlayEvent event) {
+//        if (event.getModel().getModeledEntity() == null) {
+//            return;
+//        }
+//        Map<ActiveModel, ModelEntity> map = ModelEntity.ENTITIES.get(event.getModel().getModeledEntity().getBase().getEntityId());
+//        if (map == null) {
+//            return;
+//        }
+//        ModelEntity model = map.get(event.getModel());
+//        if (model != null) {
+//            EntityTask task = model.getTask();
+//            int p = (event.getProperty().isForceOverride() ? 80 : (event.getProperty().isOverride() ? 70 : 60));
+//            task.playAnimation(event.getProperty().getName(), p);
+//        }
+//    }
 
 
 
@@ -95,7 +94,6 @@ public class ModelListener implements Listener {
                     //entry.getValue().getEntity().sendHurtPacket(entry.getValue().getViewers());
                 }
             }
-
         }
     }
 

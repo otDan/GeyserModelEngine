@@ -47,12 +47,13 @@ public class ModelEntity {
         Location location = modeledEntity.getBase().getLocation();
         entity.teleport(location);
     }
+
     public static ModelEntity create(ModeledEntity entity, ActiveModel model) {
         ModelEntity modelEntity = new ModelEntity(entity, model);
         int id = entity.getBase().getEntityId();
         Map<ActiveModel, ModelEntity> map = ENTITIES.computeIfAbsent(id, k -> new HashMap<>());
         for (Map.Entry<ActiveModel, ModelEntity> entry : map.entrySet()) {
-            if (entry.getKey() !=  model && entry.getKey().getBlueprint().getName().equals(model.getBlueprint().getName())) {
+            if (entry.getKey() != model && entry.getKey().getBlueprint().getName().equals(model.getBlueprint().getName())) {
                 return null;
             }
         }
@@ -69,6 +70,5 @@ public class ModelEntity {
         task = new EntityTask(this);
         task.run(GeyserModelEngine.getInstance());
     }
-
 
 }

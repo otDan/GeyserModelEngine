@@ -19,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.geysermc.floodgate.api.FloodgateApi;
 import org.joml.Vector3f;
 import re.imc.geysermodelengine.GeyserModelEngine;
+import re.imc.geysermodelengine.model.temp.ModelVariant;
 import re.imc.geysermodelengine.packet.entity.PacketEntity;
 import re.imc.geysermodelengine.util.BooleanPacker;
 
@@ -27,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static re.imc.geysermodelengine.model.ModelEntity.ENTITIES;
 import static re.imc.geysermodelengine.model.ModelEntity.MODEL_ENTITIES;
@@ -36,13 +38,14 @@ import static re.imc.geysermodelengine.model.ModelEntity.MODEL_ENTITIES;
 public class EntityTask {
     ModelEntity model;
 
-    int tick = 0;
-    int syncTick = 0;
+    private int tick = 0;
+    private int syncTick = 0;
 
     boolean removed = false;
 
     float lastScale = -1.0f;
     Color lastColor = null;
+    int lastVariant = 0;
     Map<String, Integer> lastIntSet = new ConcurrentHashMap<>();
     Cache<String, Boolean> lastPlayedAnim = CacheBuilder.newBuilder()
             .expireAfterWrite(30, TimeUnit.MILLISECONDS).build();
@@ -52,6 +55,7 @@ public class EntityTask {
     public EntityTask(ModelEntity model) {
         this.model = model;
     }
+
     public void runAsync() {
         PacketEntity entity = model.getEntity();
         if (entity.isDead()) {
@@ -104,8 +108,7 @@ public class EntityTask {
         // do not actually use this, atleast bundle these up ;(
         sendScale(viewers, false);
         sendColor(viewers, false);
-
-
+        sendVariant(viewers, false);
     }
 
     public void checkViewers(Set<Player> viewers) {
@@ -132,10 +135,12 @@ public class EntityTask {
     private void sendSpawnPacket(Player onlinePlayer) {
         EntityTask task = model.getTask();
         int delay = 1;
+
         boolean firstJoined = GeyserModelEngine.getInstance().getJoinedPlayer().getIfPresent(onlinePlayer) != null;
         if (firstJoined) {
             delay = GeyserModelEngine.getInstance().getJoinSendDelay();
         }
+
         if (task == null || firstJoined) {
             GeyserModelEngine.getInstance().getScheduler().schedule(() -> {
                 model.getTask().sendEntityData(onlinePlayer, 1);
@@ -146,16 +151,46 @@ public class EntityTask {
     }
 
     public void sendEntityData(Player player, int delay) {
-        EntityUtils.setCustomEntity(player, model.getEntity().getEntityId(), "modelengine:" + model.getActiveModel().getBlueprint().getName().toLowerCase());
-        GeyserModelEngine.getInstance().getScheduler().schedule(() -> {
+        String modelName = model.getActiveModel().getBlueprint().getName().toLowerCase();
+        ModelVariant modelVariant;
+        if (modelName.contains("-v_")) {
+            String[] splitString = splitString(modelName, "-v_");
+            GeyserModelEngine.getInstance().getLogger().log(Level.WARNING, "Split string %s".formatted(Arrays.toString(splitString)));
+            if (splitString.length > 0) {
+                modelName = splitString[0];
+                modelVariant = ModelVariant.valueOf(splitString[1].toUpperCase());
+                GeyserModelEngine.getInstance().getLogger().log(Level.WARNING, "Model variant should be %s and is index %s".formatted(splitString[1].toUpperCase(), modelVariant.ordinal()));
+            } else {
+                modelVariant = ModelVariant.DEFAULT;
+            }
+        } else {
+            modelVariant = ModelVariant.DEFAULT;
+        }
+        EntityUtils.setCustomEntity(player, model.getEntity().getEntityId(), "modelengine:" + modelName);
+
+        Bukkit.getScheduler().runTaskLaterAsynchronously(GeyserModelEngine.getInstance(), () -> {
             model.getEntity().sendSpawnPacket(Collections.singletonList(player));
             GeyserModelEngine.getInstance().getScheduler().schedule(() -> {
                 sendHitBox(player);
                 sendScale(Collections.singleton(player), true);
                 sendColor(Collections.singleton(player), true);
+                sendVariant(Collections.singleton(player), modelVariant.ordinal(), true);
                 updateEntityProperties(Collections.singleton(player), true);
             }, 20, TimeUnit.MILLISECONDS);
         }, delay * 20L, TimeUnit.MILLISECONDS);
+    }
+
+    public static String[] splitString(String input, String searchString) {
+        int index = input.indexOf(searchString);
+
+        if (index == -1) {
+            return new String[]{};
+        }
+
+        String firstPart = input.substring(0, index);
+        String secondPart = input.substring(index + searchString.length());
+
+        return new String[]{firstPart, secondPart};
     }
 
     public void sendScale(Collection<Player> players, boolean firstSend) {
@@ -190,6 +225,21 @@ public class EntityTask {
         lastColor = color;
     }
 
+    public void sendVariant(Collection<Player> players, boolean firstSend) {
+        sendVariant(players, lastVariant, firstSend);
+    }
+
+    public void sendVariant(Collection<Player> players, int variant, boolean firstSend) {
+        if (players.isEmpty()) return;
+
+        if (firstSend) {
+            if (variant == lastVariant) return;
+        }
+        for (Player player : players) {
+            EntityUtils.sendVariant(player, model.getEntity().getEntityId(), variant);
+        }
+        lastVariant = variant;
+    }
 
     public void updateEntityProperties(Collection<Player> players, boolean ignore, String... forceAnims) {
         int entity = model.getEntity().getEntityId();
@@ -248,6 +298,11 @@ public class EntityTask {
         }
 
 
+
+
+
+
+
         if (boneUpdates.isEmpty() && animUpdates.isEmpty()) return;
 
         Map<String, Integer> intUpdates = new HashMap<>();
@@ -299,7 +354,7 @@ public class EntityTask {
 
     public void sendHitBoxToAll() {
         for (Player viewer : model.getViewers()) {
-            EntityUtils.sendCustomHitBox(viewer, model.getEntity().getEntityId(), 0.01f, 0.01f);
+            sendHitBox(viewer);
         }
 
     }
@@ -351,6 +406,7 @@ public class EntityTask {
         if (player.getLocation().distance(entity.getLocation()) > model.getActiveModel().getModeledEntity().getBase().getRenderRadius()) {
             return false;
         }
+
         return true;
          */
     }
