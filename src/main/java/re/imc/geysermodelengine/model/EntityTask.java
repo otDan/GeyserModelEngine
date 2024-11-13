@@ -51,6 +51,7 @@ public class EntityTask {
 
     private ScheduledFuture scheduledFuture;
 
+
     public EntityTask(ModelEntity model) {
         this.model = model;
     }
@@ -169,7 +170,7 @@ public class EntityTask {
 
         Bukkit.getScheduler().runTaskLaterAsynchronously(GeyserModelEngine.getInstance(), () -> {
             model.getEntity().sendSpawnPacket(Collections.singletonList(player));
-            GeyserModelEngine.getInstance().getScheduler().schedule(() -> {
+            Bukkit.getScheduler().runTaskLaterAsynchronously(GeyserModelEngine.getInstance(), () -> {
                 sendHitBox(player);
                 sendScale(Collections.singleton(player), true);
                 sendColor(Collections.singleton(player), true);
