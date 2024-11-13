@@ -15,7 +15,6 @@ import me.zimzaza4.geyserutils.spigot.api.EntityUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.geysermc.floodgate.api.FloodgateApi;
 import org.joml.Vector3f;
 import re.imc.geysermodelengine.GeyserModelEngine;
@@ -177,7 +176,7 @@ public class EntityTask {
                 sendVariant(Collections.singleton(player), modelVariant.ordinal(), true);
                 updateEntityProperties(Collections.singleton(player), true);
             }, 20, TimeUnit.MILLISECONDS);
-        }, delay * 20L, TimeUnit.MILLISECONDS);
+        }, delay * 20L);
     }
 
     public static String[] splitString(String input, String searchString) {
@@ -235,9 +234,11 @@ public class EntityTask {
         if (firstSend) {
             if (variant == lastVariant) return;
         }
+
         for (Player player : players) {
             EntityUtils.sendVariant(player, model.getEntity().getEntityId(), variant);
         }
+
         lastVariant = variant;
     }
 
@@ -381,16 +382,24 @@ public class EntityTask {
         if (!player.isOnline()) {
             return false;
         }
+
+        if (player.isDead()) {
+            return false;
+        }
+
         if (GeyserModelEngine.getInstance().getJoinedPlayer() != null && GeyserModelEngine.getInstance().getJoinedPlayer().getIfPresent(player) != null) {
             return false;
         }
+
         Location playerLocation = player.getLocation().clone();
         Location entityLocation = entity.getLocation().clone();
         playerLocation.setY(0);
         entityLocation.setY(0);
+
         if (playerLocation.distanceSquared(entityLocation) > player.getSendViewDistance() * player.getSendViewDistance() * 16) {
             return false;
         }
+
         CullType type = model.getActiveModel().getModeledEntity().getBase().getData().getTracking().get(player);
         return type != null;
         /*

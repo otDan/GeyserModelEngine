@@ -29,6 +29,7 @@ public class ModelListener implements Listener {
         if (!GeyserModelEngine.getInstance().isInitialized()) {
             return;
         }
+
         ModelEntity.create(event.getTarget(), event.getModel());
     }
 
